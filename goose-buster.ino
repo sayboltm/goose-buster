@@ -11,8 +11,11 @@ project, whose code is based off of crazyCar coded by /u/evoggy of the Bitcraze 
 #define PM1_PWM 5   // M1 PWM, 0-255
 #define PM2_PWM 6   // M2 PWM, 0-255
 #define PM2_EN  7   // M2 direction, low, high
+#define PSERVO_AZIMUTH 8 // TODO FIX
+#define PSERVO_ELEVATION 9 //TODO fix/confirm
+#define PACCY_RELAY 10 // TODO Fix/confirm
 
-// Setup copied from evoggy with slight modification
+// Init char queue for reading RS232 from Crazyflie
 String  charQueue= "";
 char c;
 int motorSpeed = 0;
@@ -27,11 +30,13 @@ void setup()
     pinMode(PM1_PWM, OUTPUT);
     pinMode(PM2_EN, OUTPUT);
     pinMode(PM2_PWM, OUTPUT);
+    pinMode(PSERVO_AZIMUTH, OUTPUT);
+    pinMode(PSERVO_ELEVATION, OUTPUT);
+    pinMode(PACCY_RELAY, OUTPUT);
 
     // PWM of 0 gives 0 speed to Cherokey motors
     motorInit(0);
 }
-
 
 void loop()
 {
@@ -52,10 +57,15 @@ void loop()
                Less stuff to fail over serial line, seems more intuitive to me. This arduino code is less complicated than CF code.
                Also this archetecture offers larger selection of motor controllers instead of requiring a Sabertooth, at the added cost
                of requiring an Arduino 'middleman'.
+
+               If the CF code is simplified, could pass raw controller values into here, turn up roll/pitch in app
+               and have more granular control over robot instead of assuming constant (non-default for Android) value of
+               30. 
             */
             // [leftmotorDir(F,B,S), leftMotorMagnitude(0-9), rightMotorDir, rightMotorMagnitude, rightStickX, rightStickY, accessoryBool, \n]
-            char charArr[5];
-            charQueue.toCharArray(charArr, 5);
+            // char charArr[5];
+            char charArr[8];
+            charQueue.toCharArray(charArr, 8);
             Serial.println(charQueue);
 
             // Acquire speeds from serial packet to set and tell user. Must adjust max pitch/roll correctly for this static mapping to work
@@ -76,45 +86,60 @@ void loop()
             Serial.print("SpeedM2 adjusted: ");
             Serial.println(speedM2);
            
-            // Write values to PWM
-            // analogWrite(PM1_PWM, speedM1);
-            // analogWrite(PM2_PWM, speedM2);
-            // Need to pass into cases for Cherokey
-
-            // Unlike example, need separate if tree (notice no elifs) so each case
-            // is tested every time as the loop progresses, vs one action per cycle of loop
-            // which is fine for simple keyboard input/test
-
             // Process direction.
             // charArr[0] and [1] hold direction for two motors. For me
-            // watching the scope, B was forward and F was backward.
+            // watching the scope, B was forward and F was backward. I think these are hex, chosen by development order, and coincidentally look like (F)orward and (B)ackward
             // This should be changed in the CF firmware to make it easier to read, unless I'm missing something
+            // Might tear all this up and just send raw floats for processing here. Keep strange build errors to a minimum
+            // by compartmentalizing code into ecosystems connected by well-established comms (RS232 over CF UART)
+
+            // With the extra bytes now, maybe makes sense to use elifs too, to structure timing better (or even makes a difference?)
             if (charArr[0] == 'S' && charArr[1] == 'S') // Never actually seen this case but copying evoggy
             {
                 motorStop(0);
                 Serial.print("Stop");
             }
-            if (charArr[0] == 'F' && charArr[1] == 'F') // Never actually seen this case but copying evoggy
+            if (charArr[0] == 'F' && charArr[1] == 'F') 
             {
                 // Something in the CF firmware makes FW on the controller (with default drone mapping
                 // in cfclient) send Bs, and backward send F.. so easily flipped them here.
                 motorReverse(speedM1, speedM2, 0);
                 Serial.print("Forward");
             }
-            if (charArr[0] == 'B' && charArr[1] == 'B') // Never actually seen this case but copying evoggy
+            if (charArr[0] == 'B' && charArr[1] == 'B') 
             {
                 motorForward(speedM1, speedM2, 0);
                 Serial.print("Reverse");
             }
-            if (charArr[0] == 'B' && charArr[1] == 'F') // Never actually seen this case but copying evoggy
+            if (charArr[0] == 'B' && charArr[1] == 'F') 
             {
                 motorTurnLeft(speedM1, speedM2, 0);
                 Serial.print("TurnLeft");
             }
-            if (charArr[0] == 'F' && charArr[1] == 'B') // Never actually seen this case but copying evoggy
+            if (charArr[0] == 'F' && charArr[1] == 'B') 
             {
                 motorTurnRight(speedM1, speedM2, 0);
                 Serial.print("TurnRight");
+            }
+            if (charArr[4] != 0)
+            {
+                // Right stick X axis position
+                // If non-zero, a direction change is desired
+                servoControl(PSERVO_AZIMUTH, charArr[4])
+            }
+            if (charArr[5] != 0)
+            {
+                // Right stick Y axis position
+                servoControl(PSERVO_ELEVATION, charArr[5])
+            }
+            if (charArr[6] == 1)
+            {
+                // Fire relay
+                digitalWrite(PACCY_RELAY, HIGH)
+            }
+            if (charArr[6] == 0)
+            {
+                digitalWrite(PACCY_RELAY, LOW)
             }
 
             Serial.println(";"); // Notify user of end

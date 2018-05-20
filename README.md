@@ -7,8 +7,9 @@ This is a repo for the Goose Buster -- a robot designed to scare away geese so t
 Currently it is just a 4wd robot platform.
 
 Potential features to add:
- - Pan/tilt servos for observation camera (NV/thermal) or Nerf-style projectile launcher
- - Relay control for activation of attached device
+ - [In-Progress] Pan/tilt servos for observation camera (NV/thermal) or Nerf-style projectile launcher
+    - Control groundwork ready for debugging
+ - [Planned] Relay control for activation of attached device
  - Digital downlink for enhanced cameras (FPV for control will probably stay analog for speed)
  - Target tracking and PID control for the PT appendage! (reach goal -- maybe model off iSpy camera software which attempted to do this in a stationary setting)
 
