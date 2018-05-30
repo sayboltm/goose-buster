@@ -7,13 +7,14 @@ project, whose code is based off of crazyCar coded by /u/evoggy of the Bitcraze 
 
 */
 
-#define PM1_EN  4   // M1 direction, low, high
-#define PM1_PWM 5   // M1 PWM, 0-255
-#define PM2_PWM 6   // M2 PWM, 0-255
-#define PM2_EN  7   // M2 direction, low, high
-#define PSERVO_AZIMUTH 8 // TODO FIX
-#define PSERVO_ELEVATION 9 //TODO fix/confirm
-#define PACCY_RELAY 10 // TODO Fix/confirm
+// Define motor pins, leaving door open for individual 4 wheel control, but currently tied.j
+#define P_MFR_PWM  4   // M1 direction, low, high
+#define P_MFL_PWM 5   // M1 PWM, 0-255
+#define P_MRL_PWM 6   // M2 PWM, 0-255
+#define P_MRR_PWM  7   // M2 direction, low, high
+#define P_SERVO_AZIMUTH 8 // TODO FIX
+#define P_SERVO_ELEVATION 9 //TODO fix/confirm
+#define P_ACCY_RELAY 10 // TODO Fix/confirm
 
 // Init char queue for reading RS232 from Crazyflie
 String  charQueue= "";
@@ -26,15 +27,16 @@ void setup()
     Serial.begin(19200); 
     Serial.println("GOOSE BUSTER.. Deploy!");
 
-    pinMode(PM1_EN, OUTPUT);
-    pinMode(PM1_PWM, OUTPUT);
-    pinMode(PM2_EN, OUTPUT);
-    pinMode(PM2_PWM, OUTPUT);
-    pinMode(PSERVO_AZIMUTH, OUTPUT);
-    pinMode(PSERVO_ELEVATION, OUTPUT);
-    pinMode(PACCY_RELAY, OUTPUT);
+    pinMode(P_MFR_PWM, OUTPUT);
+    pinMode(P_MFL_PWM, OUTPUT);
+    pinMode(P_MRR_PWM, OUTPUT);
+    pinMode(P_MRL_PWM, OUTPUT);
+    pinMode(P_SERVO_AZIMUTH, OUTPUT);
+    pinMode(P_SERVO_ELEVATION, OUTPUT);
+    pinMode(P_ACCY_RELAY, OUTPUT);
 
     // PWM of 0 gives 0 speed to Cherokey motors
+    // If problem of crawl persists with goose-buster, try setting as inputs (TODO test in cherokey.. was planned before goose-buster stole the chassis
     motorInit(0);
 }
 
@@ -87,6 +89,8 @@ void loop()
             Serial.println(speedM2);
            
             // Process direction.
+            // TODO: Gut this and just use raw inputs from controllers like planned for servos. Consistency.
+
             // charArr[0] and [1] hold direction for two motors. For me
             // watching the scope, B was forward and F was backward. I think these are hex, chosen by development order, and coincidentally look like (F)orward and (B)ackward
             // This should be changed in the CF firmware to make it easier to read, unless I'm missing something
@@ -125,21 +129,21 @@ void loop()
             {
                 // Right stick X axis position
                 // If non-zero, a direction change is desired
-                servoControl(PSERVO_AZIMUTH, charArr[4])
+                servoControl(P_SERVO_AZIMUTH, charArr[4])
             }
             if (charArr[5] != 0)
             {
                 // Right stick Y axis position
-                servoControl(PSERVO_ELEVATION, charArr[5])
+                servoControl(P_SERVO_ELEVATION, charArr[5])
             }
             if (charArr[6] == 1)
             {
                 // Fire relay
-                digitalWrite(PACCY_RELAY, HIGH)
+                digitalWrite(P_ACCY_RELAY, HIGH)
             }
             if (charArr[6] == 0)
             {
-                digitalWrite(PACCY_RELAY, LOW)
+                digitalWrite(P_ACCY_RELAY, LOW)
             }
 
             Serial.println(";"); // Notify user of end
@@ -194,53 +198,83 @@ void servoControl(int servoPin, float userAxisInput)
 void motorInit(int power)
 {
     // This function seems pointless/only used once
-    analogWrite(PM1_PWM, power);
-    analogWrite(PM2_PWM, power);
+    analogWrite(PMFL_PWM, power);
+    analogWrite(PMRL_PWM, power);
 }
 
 //void motor1update(
 void motorStop(int duration)
 {
-    digitalWrite(PM1_PWM, 0);
-    digitalWrite(PM2_PWM, 0);
-    digitalWrite(PM1_EN, LOW);
-    digitalWrite(PM2_EN, LOW);
+    digitalWrite(_MFL_PWM, 0);
+    digitalWrite(_MRL_PWM, 0);
+    digitalWrite(P_MFR_PWM, LOW);
+    digitalWrite(P_MRR_PWM, LOW);
     delay(duration);
 }
 
 void motorForward(int speedM1, int speedM2, int duration)
 {
-    digitalWrite(PM1_EN, HIGH);
-    digitalWrite(PM2_EN, LOW);
-    analogWrite(PM1_PWM, speedM1);
-    analogWrite(PM2_PWM, speedM2);
+    digitalWrite(P_MFR_PWM, HIGH);
+    digitalWrite(P_MRR_PWM, LOW);
+    analogWrite(PMFL_PWM, speedM1);
+    analogWrite(PMRL_PWM, speedM2);
     delay(duration);
 }
 
 void motorReverse(int speedM1, int speedM2, int duration)
 {
-    digitalWrite(PM1_EN, LOW);
-    digitalWrite(PM2_EN, HIGH);
-    analogWrite(PM1_PWM, speedM1);
-    analogWrite(PM2_PWM, speedM2);
+    digitalWrite(P_MFR_PWM, LOW);
+    digitalWrite(P_MRR_PWM, HIGH);
+    analogWrite(PMFL_PWM, speedM1);
+    analogWrite(PMRL_PWM, speedM2);
     delay(duration);
 }
 
 void motorTurnLeft(int speedM1, int speedM2, int duration)
 {
-    digitalWrite(PM1_EN, HIGH);
-    digitalWrite(PM2_EN, HIGH);
-    analogWrite(PM1_PWM, speedM1);
-    analogWrite(PM2_PWM, speedM2);
+    digitalWrite(P_MFR_PWM, HIGH);
+    digitalWrite(P_MRR_PWM, HIGH);
+    analogWrite(PMFL_PWM, speedM1);
+    analogWrite(PMRL_PWM, speedM2);
     delay(duration);
 }
 
 
 void motorTurnRight(int speedM1, int speedM2, int duration)
 {
-    digitalWrite(PM1_EN, LOW);
-    digitalWrite(PM2_EN, LOW);
-    analogWrite(PM1_PWM, speedM1);
-    analogWrite(PM2_PWM, speedM2);
+    digitalWrite(P_MFR_PWM, LOW);
+    digitalWrite(P_MRR_PWM, LOW);
+    analogWrite(PMFL_PWM, speedM1);
+    analogWrite(PMRL_PWM, speedM2);
     delay(duration);
+}
+
+int mapper(int oldMotorSpeed, bool direction)
+{
+    // Hack until finish CF firmware
+    //  - one way
+
+    int newMotorSpeed
+
+    if (direction == LOW)
+    {
+        if oldMotorSpeed >= 9
+        {
+            newMotorSpeed = 0
+        }
+    }
+    else if(direction = HIGH)
+    {
+        if oldMotorSpeed >=9
+        {
+            newMotorSpeed = 255
+        {
+    }
+    else if (oldMotorSpeed == 0)
+    {
+
+    }
+    end
+    // This is stupid. sizeof(uint_8)==0-255, less work to just ditch evoggy driver instead of map then unmap, losing resolution. LOL
+    return newMotorSpeed
 }
