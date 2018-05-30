@@ -46,9 +46,15 @@
 
 static int logIdRoll;
 static int logIdPitch;
+// https://wiki.bitcraze.io/projects:crazyflie:crtp:commander
+// probably:
+static int logIdYaw
+static int logIdThrust
+// Still need to find digital inputs for buttons etc
 
 /* Template data for controlling the Skeleton bot */
 static char data[] = {'S', 'S', '0', '0', 0x0A};
+// static char data[] = {'S', 'S', ,,}
 
 /* Create output string for sending to the Skeleton bot */
 void carSetControl(float roll, float pitch)

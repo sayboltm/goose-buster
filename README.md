@@ -9,7 +9,8 @@ Currently it is just a 4wd robot platform.
 Potential features to add:
  - [In-Progress] Pan/tilt servos for observation camera (NV/thermal) or Nerf-style projectile launcher
     - Control groundwork ready for debugging
- - [Planned] Relay control for activation of attached device
+ - [In-Progress] Relay control for activation of attached device
  - Digital downlink for enhanced cameras (FPV for control will probably stay analog for speed)
  - Target tracking and PID control for the PT appendage! (reach goal -- maybe model off iSpy camera software which attempted to do this in a stationary setting)
+ - Autonomous navigation and target identification! LOL could win a DARPA prize for implementing this
 
